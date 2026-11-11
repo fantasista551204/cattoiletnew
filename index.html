@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ねこトイレ手帖 - 猫のトイレ管理アプリ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #FFFBF7;
+            color: #4A403A;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FDBA74;
+            border-radius: 8px;
+        }
+        .type-btn.selected {
+            ring-width: 4px;
+            --tw-ring-color: #F97316;
+            background-color: #FFF7ED;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- ヘッダー -->
+    <header class="bg-gradient-to-r from-amber-500 to-orange-400 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-cat text-2xl animate-bounce"></i>
+                <h1 class="text-xl font-bold tracking-wider">ねこトイレ手帖</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="connection-badge" class="text-xs px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm font-medium flex items-center gap-1.5">
+                    <span id="connection-dot" class="w-2 h-2 rounded-full bg-yellow-300"></span>
+                    <span id="connection-text">デモモード</span>
+                </span>
+                <button onclick="syncWithGAS()" id="sync-btn" class="p-2 rounded-full hover:bg-white/20 transition" title="データを同期">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツコンテナ -->
+    <main class="max-w-xl mx-auto px-4 pt-5">
+
+        <!-- ==================== 1. 記録ページ ==================== -->
+        <section id="tab-record" class="space-y-6">
+            <!-- クイックサマリー（今日の状況） -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex justify-around text-center">
+                <div>
+                    <p class="text-xs text-gray-400 font-medium">今日のおしっこ</p>
+                    <p class="text-xl font-bold text-blue-500 mt-0.5"><span id="today-pee-count">0</span><span class="text-xs font-normal ml-0.5">回</span></p>
+                </div>
+                <div class="border-r border-orange-100"></div>
+                <div>
+                    <p class="text-xs text-gray-400 font-medium">今日のうんち</p>
+                    <p class="text-xl font-bold text-amber-700 mt-0.5"><span id="today-poop-count">0</span><span class="text-xs font-normal ml-0.5">回</span></p>
+                </div>
+                <div class="border-r border-orange-100"></div>
+                <div>
+                    <p class="text-xs text-gray-400 font-medium">最終お掃除</p>
+                    <p class="text-sm font-bold text-gray-700 mt-1.5" id="last-clean-time">--:--</p>
+                </div>
+            </div>
+
+            <!-- 記録フォーム -->
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-orange-100 space-y-6">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-paw text-orange-400"></i>
+                    <span>トイレの記録をつける</span>
+                </h2>
+
+                <!-- 1. 種類の選択 -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">種類を選択してください <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="type-buttons">
+                        <button type="button" onclick="selectType('おしっこ')" data-type="おしっこ" class="type-btn selected flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-blue-100 bg-blue-50/40 hover:bg-blue-50 transition duration-200 ring-orange-500">
+                            <span class="text-3xl mb-1">💧</span>
+                            <span class="font-bold text-sm text-gray-800">おしっこ</span>
+                        </button>
+                        <button type="button" onclick="selectType('うんち')" data-type="うんち" class="type-btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-amber-100 bg-amber-50/40 hover:bg-amber-50 transition duration-200 ring-orange-500">
+                            <span class="text-3xl mb-1">💩</span>
+                            <span class="font-bold text-sm text-gray-800">うんち</span>
+                        </button>
+                        <button type="button" onclick="selectType('両方')" data-type="両方" class="type-btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-purple-100 bg-purple-50/40 hover:bg-purple-50 transition duration-200 ring-orange-500">
+                            <span class="text-3xl mb-1">💧💩</span>
+                            <span class="font-bold text-sm text-gray-800">両方</span>
+                        </button>
+                        <button type="button" onclick="selectType('砂補充')" data-type="砂補充" class="type-btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-emerald-100 bg-emerald-50/40 hover:bg-emerald-50 transition duration-200 ring-orange-500">
+                            <span class="text-3xl mb-1">🌱</span>
+                            <span class="font-bold text-sm text-gray-800">砂補充</span>
+                        </button>
+                        <button type="button" onclick="selectType('砂交換')" data-type="砂交換" class="type-btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-orange-100 bg-orange-50/40 hover:bg-orange-50 transition duration-200 ring-orange-500 col-span-2 sm:col-span-1">
+                            <span class="text-3xl mb-1">✨</span>
+                            <span class="font-bold text-sm text-gray-800">砂交換 (全替)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 処理をした人 (ドロップダウン) -->
+                <div class="space-y-2">
+                    <label for="record-person" class="block text-sm font-bold text-gray-700">処理をした人 <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <select id="record-person" class="w-full appearance-none bg-gray-50 border border-gray-200 text-gray-800 py-3.5 px-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white font-medium">
+                            <!-- JSで動的に生成 -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 日時 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="record-datetime" class="block text-sm font-bold text-gray-700">日時 <span class="text-red-500">*</span></label>
+                        <button type="button" onclick="setNowToInput('record-datetime')" class="text-xs text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-lg">
+                            <i class="fa-regular fa-clock"></i> 現在時刻にリセット
+                        </button>
+                    </div>
+                    <input type="datetime-local" id="record-datetime" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white font-medium">
+                </div>
+
+                <!-- 4. メモ -->
+                <div class="space-y-2">
+                    <label for="record-note" class="block text-sm font-bold text-gray-700">メモ (任意)</label>
+                    <input type="text" id="record-note" placeholder="例：少し柔らかめ、量が多い など" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white text-sm">
+                </div>
+
+                <!-- 送信ボタン -->
+                <button type="button" onclick="submitNewRecord()" id="submit-btn" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-200 transition transform active:scale-95 flex justify-center items-center gap-2 text-lg">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span>記録を保存する</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== 2. 履歴一覧ページ ==================== -->
+        <section id="tab-history" class="space-y-5 hidden">
+            <!-- 単位切り替え（日・週・月） -->
+            <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-orange-100 flex">
+                <button onclick="changeHistoryUnit('day')" id="unit-btn-day" class="flex-1 py-2.5 text-sm font-bold rounded-xl transition bg-orange-500 text-white shadow-sm">日別</button>
+                <button onclick="changeHistoryUnit('week')" id="unit-btn-week" class="flex-1 py-2.5 text-sm font-bold rounded-xl transition text-gray-600 hover:bg-orange-50">週別</button>
+                <button onclick="changeHistoryUnit('month')" id="unit-btn-month" class="flex-1 py-2.5 text-sm font-bold rounded-xl transition text-gray-600 hover:bg-orange-50">月別</button>
+            </div>
+
+            <!-- 期間ナビゲーション -->
+            <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-orange-100 flex items-center justify-between">
+                <button onclick="navigatePeriod(-1)" class="w-10 h-10 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 flex items-center justify-center transition">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="text-center">
+                    <p id="period-label" class="font-bold text-gray-800 text-base">2026年11月11日 (水)</p>
+                    <button onclick="resetPeriodToToday()" class="text-xs text-orange-500 font-medium hover:underline mt-0.5">今日へ戻る</button>
+                </div>
+                <button onclick="navigatePeriod(1)" class="w-10 h-10 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 flex items-center justify-center transition">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- 期間集計サマリー -->
+            <div class="grid grid-cols-5 gap-2 text-center">
+                <div class="bg-blue-50/80 border border-blue-100 p-2.5 rounded-2xl">
+                    <span class="text-lg">💧</span>
+                    <p class="text-[11px] text-gray-500 font-bold mt-0.5">おしっこ</p>
+                    <p class="text-base font-bold text-blue-600" id="sum-pee">0</p>
+                </div>
+                <div class="bg-amber-50/80 border border-amber-100 p-2.5 rounded-2xl">
+                    <span class="text-lg">💩</span>
+                    <p class="text-[11px] text-gray-500 font-bold mt-0.5">うんち</p>
+                    <p class="text-base font-bold text-amber-800" id="sum-poop">0</p>
+                </div>
+                <div class="bg-purple-50/80 border border-purple-100 p-2.5 rounded-2xl">
+                    <span class="text-lg">💧💩</span>
+                    <p class="text-[11px] text-gray-500 font-bold mt-0.5">両方</p>
+                    <p class="text-base font-bold text-purple-700" id="sum-both">0</p>
+                </div>
+                <div class="bg-emerald-50/80 border border-emerald-100 p-2.5 rounded-2xl">
+                    <span class="text-lg">🌱</span>
+                    <p class="text-[11px] text-gray-500 font-bold mt-0.5">砂補充</p>
+                    <p class="text-base font-bold text-emerald-700" id="sum-refill">0</p>
+                </div>
+                <div class="bg-orange-50/80 border border-orange-100 p-2.5 rounded-2xl">
+                    <span class="text-lg">✨</span>
+                    <p class="text-[11px] text-gray-500 font-bold mt-0.5">砂交換</p>
+                    <p class="text-base font-bold text-orange-600" id="sum-change">0</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-400 text-right px-1">※「両方」はおしっこ・うんち各1回としても合算できますが、上記は純粋な記録種別ごとの件数です。</p>
+
+            <!-- 履歴リスト -->
+            <div id="history-list" class="space-y-3 pb-6">
+                <!-- JSで動的にカードを生成 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== 編集モーダル ==================== -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-orange-500"></i>
+                    <span>記録の編集</span>
+                </h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="edit-id">
+
+            <!-- 種類 -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-600">種類</label>
+                <select id="edit-type" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 font-medium">
+                    <option value="おしっこ">💧 おしっこ</option>
+                    <option value="うんち">💩 うんち</option>
+                    <option value="両方">💧💩 両方</option>
+                    <option value="砂補充">🌱 砂補充</option>
+                    <option value="砂交換">✨ 砂交換</option>
+                </select>
+            </div>
+
+            <!-- 処理をした人 -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-600">処理をした人</label>
+                <select id="edit-person" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 font-medium">
+                </select>
+            </div>
+
+            <!-- 日時 -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-600">日時</label>
+                <input type="datetime-local" id="edit-datetime" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 font-medium">
+            </div>
+
+            <!-- メモ -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-600">メモ</label>
+                <input type="text" id="edit-note" class="w-full bg-gray-50 border border-gray-200 text-gray-800 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm">
+            </div>
+
+            <p class="text-[11px] text-gray-400">
+                ※保存すると、スプレッドシートの元の行を削除し、新しい行として追加します。
+            </p>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeEditModal()" class="flex-1 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition">
+                    キャンセル
+                </button>
+                <button onclick="submitEditRecord()" class="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-md shadow-orange-200 transition">
+                    変更を保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 削除確認モーダル ==================== -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">記録を削除しますか？</h3>
+            <p id="delete-target-info" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl font-medium"></p>
+            <p class="text-xs text-gray-400">スプレッドシートの該当行が削除されます。この操作は取り消せません。</p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition">
+                    キャンセル
+                </button>
+                <button onclick="confirmDeleteRecord()" class="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm shadow-md shadow-red-200 transition">
+                    削除する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ローディングオーバーレイ ==================== -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/70 backdrop-blur-xs z-50 hidden flex flex-col items-center justify-center">
+        <div class="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mb-3"></div>
+        <p id="loading-text" class="text-sm font-bold text-gray-700">スプレッドシートと通信中...</p>
+    </div>
+
+    <!-- ==================== トースト通知 ==================== -->
+    <div id="toast-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 space-y-2 pointer-events-none w-11/12 max-w-sm"></div>
+
+    <!-- ==================== ボトムナビゲーション ==================== -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 shadow-lg z-40">
+        <div class="max-w-xl mx-auto flex justify-around">
+            <button onclick="switchTab('record')" id="nav-record" class="flex-1 py-3 flex flex-col items-center justify-center text-orange-500 font-bold transition">
+                <i class="fa-solid fa-paw text-xl mb-0.5"></i>
+                <span class="text-xs">記録する</span>
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="flex-1 py-3 flex flex-col items-center justify-center text-gray-400 hover:text-orange-400 font-medium transition">
+                <i class="fa-solid fa-calendar-days text-xl mb-0.5"></i>
+                <span class="text-xs">履歴一覧</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== JavaScript ==================== -->
+    <script>
+        /* =====================================================================
+         * 【Googleスプレッドシート側 Apps Script (GAS) 用コード】
+         * スプレッドシートの「拡張機能」>「Apps Script」に以下のコードを貼り付け、
+         * ウェブアプリとしてデプロイ（アクセスできるユーザー：全員）してください。
+         * =====================================================================
+        
+        const SHEET_NAME = '記録';
+
+        function getOrCreateSheet() {
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          let sheet = ss.getSheetByName(SHEET_NAME);
+          if (!sheet) {
+            sheet = ss.insertSheet(SHEET_NAME);
+            sheet.appendRow(['ID', '日時', '種類', '担当者', 'メモ', '作成日時']);
+            sheet.setFrozenRows(1);
+          }
+          return sheet;
+        }
+
+        function doGet(e) {
+          return handleRequest(e);
+        }
+
+        function doPost(e) {
+          return handleRequest(e);
+        }
+
+        function handleRequest(e) {
+          const lock = LockService.getScriptLock();
+          lock.tryLock(10000);
+          
+          try {
+            const sheet = getOrCreateSheet();
+            let params = {};
+            
+            if (e && e.postData && e.postData.contents) {
+              params = JSON.parse(e.postData.contents);
+            } else if (e && e.parameter) {
+              params = e.parameter;
+            }
+            
+            const action = params.action || 'get';
+            
+            if (action === 'add') {
+              // 新規行を追加
+              const rec = params.record;
+              sheet.appendRow([
+                rec.id,
+                rec.datetime,
+                rec.type,
+                rec.person,
+                rec.note || '',
+                new Date().toISOString()
+              ]);
+              
+            } else if (action === 'edit') {
+              // 編集時：該当スプレッドシート行を削除して新規行を追加
+              const targetId = params.id;
+              const rec = params.record;
+              const data = sheet.getDataRange().getValues();
+              
+              for (let i = data.length - 1; i >= 1; i--) {
+                if (String(data[i][0]) === String(targetId)) {
+                  sheet.deleteRow(i + 1); // 該当行を削除
+                  break;
+                }
+              }
+              // 新規行として追加
+              sheet.appendRow([
+                rec.id,
+                rec.datetime,
+                rec.type,
+                rec.person,
+                rec.note || '',
+                new Date().toISOString()
+              ]);
+              
+            } else if (action === 'delete') {
+              // 削除時：該当スプレッドシート行を削除
+              const targetId = params.id;
+              const data = sheet.getDataRange().getValues();
+              
+              for (let i = data.length - 1; i >= 1; i--) {
+                if (String(data[i][0]) === String(targetId)) {
+                  sheet.deleteRow(i + 1); // 該当行を削除
+                  break;
+                }
+              }
+            }
+            
+            // 最新の全データを返却
+            const rows = sheet.getDataRange().getValues();
+            const records = [];
+            for (let i = 1; i < rows.length; i++) {
+              if (!rows[i][0]) continue;
+              records.push({
+                id: String(rows[i][0]),
+                datetime: String(rows[i][1]),
+                type: String(rows[i][2]),
+                person: String(rows[i][3]),
+                note: String(rows[i][4] || '')
+              });
+            }
+            
+            return ContentService.createTextOutput(JSON.stringify({
+              status: 'success',
+              records: records
+            })).setMimeType(ContentService.MimeType.JSON);
+            
+          } catch (err) {
+            return ContentService.createTextOutput(JSON.stringify({
+              status: 'error',
+              message: err.toString()
+            })).setMimeType(ContentService.MimeType.JSON);
+          } finally {
+            lock.releaseLock();
+          }
+        }
+        ===================================================================== */
+
+        // =====================================================================
+        // アプリ設定（ここにGASのウェブアプリURLと担当者リストを直接設定します）
+        // =====================================================================
+        // ★デプロイしたGASのウェブアプリURL（https://script.google.com/macros/s/xxxxx/exec）を入力してください
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbydxJb3Ail7kSQGhqxXJo1haDoTK5cHWUZaUlOHQ5BNGDTTSjb-fYKE-hVha5xxRMHj/exec';
+
+        // ★「処理をした人」のドロップダウン選択肢
+        const PERSONS_LIST = ['明弘', '淳子', '弘樹'];
+
+        // --- 状態管理 ---
+        const STORAGE_KEY_RECORDS = 'cat_toilet_records_v1';
+
+        let records = [];
+        let persons = [...PERSONS_LIST];
+        let gasUrl = GAS_WEB_APP_URL.trim();
+
+        let selectedType = 'おしっこ';
+        let currentHistoryUnit = 'day'; // 'day' | 'week' | 'month'
+        let currentBaseDate = new Date();
+        let pendingDeleteId = null;
+
+        // 種別のメタ情報
+        const TYPE_META = {
+            'おしっこ': { icon: '💧', badgeBg: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
+            'うんち':   { icon: '💩', badgeBg: 'bg-amber-100 text-amber-800', border: 'border-amber-200' },
+            '両方':     { icon: '💧💩', badgeBg: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
+            '砂補充':   { icon: '🌱', badgeBg: 'bg-emerald-100 text-emerald-700', border: 'border-emerald-200' },
+            '砂交換':   { icon: '✨', badgeBg: 'bg-orange-100 text-orange-700', border: 'border-orange-200' }
+        };
+
+        // --- 初期化 ---
+        window.onload = function() {
+            loadLocalData();
+            setNowToInput('record-datetime');
+            renderPersonSelects();
+            updateConnectionBadge();
+            updateTodaySummary();
+            renderHistory();
+
+            // GASのURLがコード内に設定されていれば初回同期を実行
+            if (gasUrl) {
+                syncWithGAS(true);
+            }
+        };
+
+        // --- ローカルデータの読み書き ---
+        function loadLocalData() {
+            const savedRecords = localStorage.getItem(STORAGE_KEY_RECORDS);
+            if (savedRecords) {
+                try { records = JSON.parse(savedRecords); } catch (e) {}
+            } else if (!gasUrl) {
+                // GAS未設定かつ初回起動時はわかりやすいサンプルデータを入れておく
+                createInitialSampleData();
+            }
+        }
+
+        function saveLocalRecords() {
+            localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
+        }
+
+        function createInitialSampleData() {
+            const now = new Date();
+            const fmt = (d) => {
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            const t1 = new Date(now.getTime() - 1000 * 60 * 90);
+            const t2 = new Date(now.getTime() - 1000 * 60 * 280);
+            const t3 = new Date(now.getTime() - 1000 * 60 * 60 * 26);
+
+            records = [
+                { id: 'sample-1', datetime: fmt(t1), type: 'おしっこ', person: persons[0] || 'ママ', note: 'いつも通り' },
+                { id: 'sample-2', datetime: fmt(t2), type: '両方', person: persons[1] || 'パパ', note: 'いい形！' },
+                { id: 'sample-3', datetime: fmt(t3), type: '砂補充', person: persons[0] || 'ママ', note: '1袋追加' }
+            ];
+            saveLocalRecords();
+        }
+
+        // --- UI操作・タブ切り替え ---
+        function switchTab(tabName) {
+            const tabs = ['record', 'history'];
+            tabs.forEach(t => {
+                const sec = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    nav.classList.remove('text-gray-400', 'font-medium');
+                    nav.classList.add('text-orange-500', 'font-bold');
+                } else {
+                    sec.classList.add('hidden');
+                    nav.classList.remove('text-orange-500', 'font-bold');
+                    nav.classList.add('text-gray-400', 'font-medium');
+                }
+            });
+
+            if (tabName === 'record') {
+                updateTodaySummary();
+            } else if (tabName === 'history') {
+                renderHistory();
+            }
+        }
+
+        function selectType(type) {
+            selectedType = type;
+            const buttons = document.querySelectorAll('#type-buttons .type-btn');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-type') === type) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        function setNowToInput(inputId) {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const localIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            document.getElementById(inputId).value = localIso;
+        }
+
+        // --- 担当者（処理をした人）選択肢の描画 ---
+        function renderPersonSelects() {
+            const recordSelect = document.getElementById('record-person');
+            const editSelect = document.getElementById('edit-person');
+            const currentVal = recordSelect.value;
+
+            recordSelect.innerHTML = '';
+            editSelect.innerHTML = '';
+
+            persons.forEach(p => {
+                const opt1 = document.createElement('option');
+                opt1.value = p;
+                opt1.textContent = p;
+                recordSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = p;
+                opt2.textContent = p;
+                editSelect.appendChild(opt2);
+            });
+
+            if (persons.includes(currentVal)) {
+                recordSelect.value = currentVal;
+            }
+        }
+
+        // --- GAS通信処理 ---
+        function updateConnectionBadge() {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+            if (gasUrl) {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-300';
+                text.textContent = 'スプレッドシート連携中';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-yellow-300';
+                text.textContent = 'ローカル保存 (GAS未設定)';
+            }
+        }
+
+        async function sendActionToGAS(payload, silent = false) {
+            if (!gasUrl) return null;
+
+            if (!silent) showLoading('スプレッドシートを更新中...');
+            try {
+                // GASのCORSプリフライト回避のため text/plain としてJSON文字列をPOSTする
+                const response = await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.status === 'success' && Array.isArray(data.records)) {
+                    records = data.records;
+                    saveLocalRecords();
+                    return data;
+                } else {
+                    throw new Error(data.message || '不明なエラー');
+                }
+            } catch (err) {
+                console.error('GAS通信エラー:', err);
+                showToast('スプレッドシートとの通信に失敗しました。コード内のGAS_WEB_APP_URLをご確認ください。', 'error');
+                return null;
+            } finally {
+                if (!silent) hideLoading();
+            }
+        }
+
+        async function syncWithGAS(silent = false) {
+            if (!gasUrl) {
+                if (!silent) showToast('コード内の GAS_WEB_APP_URL にURLを設定してください', 'info');
+                return;
+            }
+            if (!silent) showLoading('スプレッドシートから履歴を取得中...');
+            try {
+                const res = await fetch(`${gasUrl}?action=get&t=${Date.now()}`);
+                const data = await res.json();
+                if (data.status === 'success' && Array.isArray(data.records)) {
+                    records = data.records;
+                    saveLocalRecords();
+                    updateTodaySummary();
+                    renderHistory();
+                    if (!silent) showToast('スプレッドシートと同期しました！');
+                } else {
+                    throw new Error(data.message || '取得エラー');
+                }
+            } catch (err) {
+                console.error(err);
+                if (!silent) showToast('同期に失敗しました。GASのURLや公開権限をご確認ください。', 'error');
+            } finally {
+                if (!silent) hideLoading();
+            }
+        }
+
+        // --- 記録の追加・編集・削除 ---
+        async function submitNewRecord() {
+            const person = document.getElementById('record-person').value;
+            const datetime = document.getElementById('record-datetime').value;
+            const note = document.getElementById('record-note').value.trim();
+
+            if (!selectedType || !person || !datetime) {
+                showToast('必須項目を入力してください', 'error');
+                return;
+            }
+
+            const newRecord = {
+                id: 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                datetime: datetime,
+                type: selectedType,
+                person: person,
+                note: note
+            };
+
+            if (gasUrl) {
+                const res = await sendActionToGAS({ action: 'add', record: newRecord });
+                if (!res) return; // エラー時は中断
+            } else {
+                records.push(newRecord);
+                saveLocalRecords();
+            }
+
+            // フォームリセット
+            document.getElementById('record-note').value = '';
+            setNowToInput('record-datetime');
+            updateTodaySummary();
+            renderHistory();
+            showToast(`「${selectedType}」を記録しました🐾`);
+        }
+
+        function openEditModal(id) {
+            const target = records.find(r => r.id === id);
+            if (!target) return;
+
+            document.getElementById('edit-id').value = target.id;
+            document.getElementById('edit-type').value = target.type;
+
+            // もし既存の担当者が現在のリストに無ければ一時的に追加
+            const editPersonSelect = document.getElementById('edit-person');
+            if (!persons.includes(target.person)) {
+                const opt = document.createElement('option');
+                opt.value = target.person;
+                opt.textContent = target.person;
+                editPersonSelect.appendChild(opt);
+            }
+            editPersonSelect.value = target.person;
+
+            document.getElementById('edit-datetime').value = formatToDatetimeLocal(target.datetime);
+            document.getElementById('edit-note').value = target.note || '';
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        // 編集保存（該当行を削除して新規行を追加）
+        async function submitEditRecord() {
+            const oldId = document.getElementById('edit-id').value;
+            const type = document.getElementById('edit-type').value;
+            const person = document.getElementById('edit-person').value;
+            const datetime = document.getElementById('edit-datetime').value;
+            const note = document.getElementById('edit-note').value.trim();
+
+            if (!type || !person || !datetime) {
+                showToast('必須項目を入力してください', 'error');
+                return;
+            }
+
+            // 新規行として追加するための新しいレコードオブジェクト
+            const newRecord = {
+                id: 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                datetime: datetime,
+                type: type,
+                person: person,
+                note: note
+            };
+
+            if (gasUrl) {
+                // GAS側で該当IDの行を deleteRow し、末尾に appendRow する
+                const res = await sendActionToGAS({
+                    action: 'edit',
+                    id: oldId,
+                    record: newRecord
+                });
+                if (!res) return;
+            } else {
+                // デモモードでも該当要素を削除して末尾に新規追加
+                records = records.filter(r => r.id !== oldId);
+                records.push(newRecord);
+                saveLocalRecords();
+            }
+
+            closeEditModal();
+            updateTodaySummary();
+            renderHistory();
+            showToast('記録を更新しました（元行削除＋新規行追加）');
+        }
+
+        function openDeleteModal(id) {
+            const target = records.find(r => r.id === id);
+            if (!target) return;
+            pendingDeleteId = id;
+
+            const d = new Date(target.datetime);
+            const dateStr = isNaN(d) ? target.datetime : `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            document.getElementById('delete-target-info').textContent = `${dateStr} - ${target.type} (${target.person})`;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteId = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        // 削除実行（該当スプレッドシート行を削除）
+        async function confirmDeleteRecord() {
+            if (!pendingDeleteId) return;
+            const targetId = pendingDeleteId;
+
+            if (gasUrl) {
+                const res = await sendActionToGAS({
+                    action: 'delete',
+                    id: targetId
+                });
+                if (!res) return;
+            } else {
+                records = records.filter(r => r.id !== targetId);
+                saveLocalRecords();
+            }
+
+            closeDeleteModal();
+            updateTodaySummary();
+            renderHistory();
+            showToast('記録を削除しました');
+        }
+
+        // --- 今日のサマリー計算 ---
+        function updateTodaySummary() {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+            let peeCount = 0;
+            let poopCount = 0;
+            let latestTime = null;
+
+            records.forEach(r => {
+                const d = new Date(r.datetime);
+                if (isNaN(d)) return;
+
+                if (!latestTime || d > latestTime) {
+                    latestTime = d;
+                }
+
+                if (d >= startOfToday && d <= endOfToday) {
+                    if (r.type === 'おしっこ') peeCount++;
+                    if (r.type === 'うんち') poopCount++;
+                    if (r.type === '両方') {
+                        peeCount++;
+                        poopCount++;
+                    }
+                }
+            });
+
+            document.getElementById('today-pee-count').textContent = peeCount;
+            document.getElementById('today-poop-count').textContent = poopCount;
+
+            if (latestTime) {
+                const pad = (n) => String(n).padStart(2, '0');
+                const isToday = latestTime >= startOfToday && latestTime <= endOfToday;
+                const prefix = isToday ? '今日 ' : `${latestTime.getMonth()+1}/${latestTime.getDate()} `;
+                document.getElementById('last-clean-time').textContent = `${prefix}${pad(latestTime.getHours())}:${pad(latestTime.getMinutes())}`;
+            } else {
+                document.getElementById('last-clean-time').textContent = '記録なし';
+            }
+        }
+
+        // --- 履歴一覧表示（日・週・月） ---
+        function changeHistoryUnit(unit) {
+            currentHistoryUnit = unit;
+            ['day', 'week', 'month'].forEach(u => {
+                const btn = document.getElementById(`unit-btn-${u}`);
+                if (u === unit) {
+                    btn.className = 'flex-1 py-2.5 text-sm font-bold rounded-xl transition bg-orange-500 text-white shadow-sm';
+                } else {
+                    btn.className = 'flex-1 py-2.5 text-sm font-bold rounded-xl transition text-gray-600 hover:bg-orange-50';
+                }
+            });
+            renderHistory();
+        }
+
+        function navigatePeriod(direction) {
+            const d = new Date(currentBaseDate);
+            if (currentHistoryUnit === 'day') {
+                d.setDate(d.getDate() + direction);
+            } else if (currentHistoryUnit === 'week') {
+                d.setDate(d.getDate() + direction * 7);
+            } else if (currentHistoryUnit === 'month') {
+                d.setMonth(d.getMonth() + direction);
+            }
+            currentBaseDate = d;
+            renderHistory();
+        }
+
+        function resetPeriodToToday() {
+            currentBaseDate = new Date();
+            renderHistory();
+        }
+
+        function getPeriodRange(baseDate, unit) {
+            const y = baseDate.getFullYear();
+            const m = baseDate.getMonth();
+            const date = baseDate.getDate();
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+            if (unit === 'day') {
+                const start = new Date(y, m, date, 0, 0, 0, 0);
+                const end = new Date(y, m, date, 23, 59, 59, 999);
+                const label = `${y}年${m + 1}月${date}日 (${dayNames[start.getDay()]})`;
+                return { start, end, label };
+            } else if (unit === 'week') {
+                // 月曜始まり〜日曜終わり
+                const day = baseDate.getDay();
+                const diffToMonday = day === 0 ? -6 : 1 - day;
+                const start = new Date(y, m, date + diffToMonday, 0, 0, 0, 0);
+                const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 23, 59, 59, 999);
+                const label = `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日 〜 ${end.getMonth() + 1}月${end.getDate()}日`;
+                return { start, end, label };
+            } else {
+                const start = new Date(y, m, 1, 0, 0, 0, 0);
+                const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
+                const label = `${y}年${m + 1}月`;
+                return { start, end, label };
+            }
+        }
+
+        function renderHistory() {
+            const { start, end, label } = getPeriodRange(currentBaseDate, currentHistoryUnit);
+            document.getElementById('period-label').textContent = label;
+
+            // 期間内のレコードを抽出し、新しい順にソート
+            const filtered = records.filter(r => {
+                const d = new Date(r.datetime);
+                return !isNaN(d) && d >= start && d <= end;
+            }).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+            // 集計カウント更新
+            const counts = { 'おしっこ': 0, 'うんち': 0, '両方': 0, '砂補充': 0, '砂交換': 0 };
+            filtered.forEach(r => {
+                if (counts[r.type] !== undefined) counts[r.type]++;
+            });
+            document.getElementById('sum-pee').textContent = counts['おしっこ'];
+            document.getElementById('sum-poop').textContent = counts['うんち'];
+            document.getElementById('sum-both').textContent = counts['両方'];
+            document.getElementById('sum-refill').textContent = counts['砂補充'];
+            document.getElementById('sum-change').textContent = counts['砂交換'];
+
+            // リスト描画
+            const listEl = document.getElementById('history-list');
+            listEl.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="bg-white rounded-3xl p-10 text-center border border-dashed border-orange-200 text-gray-400">
+                        <i class="fa-solid fa-cat text-4xl mb-2 text-orange-200"></i>
+                        <p class="font-bold text-sm">この期間の記録はありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const pad = (n) => String(n).padStart(2, '0');
+
+            filtered.forEach(r => {
+                const d = new Date(r.datetime);
+                const datePart = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`;
+                const timePart = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                const meta = TYPE_META[r.type] || { icon: '🐾', badgeBg: 'bg-gray-100 text-gray-700', border: 'border-gray-200' };
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-2xl p-4 shadow-xs border ${meta.border} flex items-center justify-between gap-3 transition hover:shadow-md`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-12 h-12 rounded-2xl ${meta.badgeBg} flex items-center justify-center text-xl shrink-0 font-bold">
+                            ${meta.icon}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-gray-800 text-base">${escapeHtml(r.type)}</span>
+                                <span class="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                                    <i class="fa-solid fa-user text-[10px] mr-1 text-gray-400"></i>${escapeHtml(r.person)}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                <span class="font-medium"><i class="fa-regular fa-clock mr-1"></i>${datePart} ${timePart}</span>
+                            </div>
+                            ${r.note ? `<p class="text-xs text-gray-600 mt-1.5 bg-orange-50/50 px-2.5 py-1 rounded-lg truncate">${escapeHtml(r.note)}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="openEditModal('${r.id}')" class="w-9 h-9 rounded-xl text-gray-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center transition" title="編集">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="openDeleteModal('${r.id}')" class="w-9 h-9 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition" title="削除">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // --- ユーティリティ ---
+        function formatToDatetimeLocal(dateStr) {
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function showLoading(text = '通信中...') {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-red-600' : (type === 'info' ? 'bg-gray-800' : 'bg-emerald-600');
+            const iconClass = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-2xl shadow-lg text-sm font-bold flex items-center gap-2 transition transform duration-300 opacity-0 -translate-y-2`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', '-translate-y-2');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
